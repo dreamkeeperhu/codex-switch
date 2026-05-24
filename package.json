@@ -1,0 +1,16 @@
+{
+  "name": "codex-switch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Menu bar Codex switcher for relay profiles, plugin unlock, and remote control.",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check src/config.js && node --check src/cdp.js && node --check src/plugin-unlock-inject.js && node --check public/app.js",
+    "test": "node --test",
+    "build:macos": "./build-macos-app.sh"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

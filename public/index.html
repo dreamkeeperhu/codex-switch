@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex Switch</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div class="brand">
+          <h1>Codex Switch</h1>
+          <span id="configPath" class="config-path">~/.codex/config.toml</span>
+        </div>
+        <div class="mode-pill" aria-label="当前应用">
+          <span class="codex-mark">◎</span>
+          <strong>Codex</strong>
+        </div>
+        <div class="header-actions">
+          <button id="refreshButton" class="icon-button" type="button" title="刷新状态">↻</button>
+          <button id="addProfileButton" class="round-button" type="button" title="添加中转">＋</button>
+        </div>
+      </header>
+
+      <section class="status-strip" aria-label="状态">
+        <div>
+          <span>ChatGPT 登录</span>
+          <strong id="authStatus">检查中</strong>
+        </div>
+        <div>
+          <span>当前 provider</span>
+          <strong id="providerStatus">-</strong>
+        </div>
+        <div>
+          <span>当前中转</span>
+          <strong id="activeProfileStatus">-</strong>
+        </div>
+        <div>
+          <span>Codex.app</span>
+          <strong id="appStatus">-</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <section class="provider-list-panel" aria-label="中转配置">
+          <div class="section-head">
+            <div>
+              <h2>中转配置</h2>
+              <p>选择一个配置后，Codex 会继续使用官方登录态和 custom provider。</p>
+            </div>
+            <span id="profileCount" class="count-pill">0</span>
+          </div>
+          <div id="providerList" class="provider-list"></div>
+        </section>
+
+        <aside class="detail-panel" aria-label="配置详情">
+          <form id="profileForm">
+            <div class="section-head compact">
+              <div>
+                <h2 id="editorTitle">配置详情</h2>
+                <p id="editorHint">API Key 明文保存，方便粘贴和修改。</p>
+              </div>
+            </div>
+            <input id="profileId" type="hidden" />
+            <label>
+              <span>名称</span>
+              <input id="profileName" placeholder="例如 PackyCode" autocomplete="off" />
+            </label>
+            <label>
+              <span>Base URL</span>
+              <input id="baseUrl" placeholder="https://example.com/v1" autocomplete="off" />
+            </label>
+            <label>
+              <span>API Key</span>
+              <input id="apiKey" placeholder="sk-..." type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
+            </label>
+            <label>
+              <span>备注</span>
+              <input id="profileNote" placeholder="例如公司账号 / 备用线路" autocomplete="off" />
+            </label>
+
+            <div class="form-grid">
+              <label>
+                <span>Codex.app 路径</span>
+                <input id="codexAppPath" placeholder="/Applications/Codex.app" autocomplete="off" />
+              </label>
+              <label>
+                <span>CDP Port</span>
+                <input id="debugPort" inputmode="numeric" value="9229" />
+              </label>
+            </div>
+
+            <div class="actions">
+              <button id="saveProfileButton" type="submit">保存</button>
+              <button id="useProfileButton" class="secondary" type="button">使用</button>
+              <button id="testProfileButton" class="ghost" type="button">测试</button>
+              <button id="deleteProfileButton" class="danger" type="button">删除</button>
+            </div>
+          </form>
+
+          <div class="codex-actions">
+            <button id="launchButton" type="button">启动并解锁</button>
+            <button id="injectButton" class="secondary" type="button">只注入解锁</button>
+          </div>
+
+          <section class="log-panel" aria-label="运行输出">
+            <div class="log-head">
+              <strong>运行输出</strong>
+              <span id="lastUpdated">-</span>
+            </div>
+            <pre id="logOutput">等待操作...</pre>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
