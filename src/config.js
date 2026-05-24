@@ -5,6 +5,8 @@ import path from "node:path";
 
 export const CUSTOM_PROVIDER = "custom";
 export const PROFILE_STORE_FILE = "codex-switch.json";
+export const SETTINGS_STORE_FILE = "codex-switch-settings.json";
+export const SERVICE_TIER_MODES = new Set(["inherit", "standard", "fast"]);
 
 export function defaultCodexHome(env = process.env) {
   return expandHome(env.CODEX_HOME || "~/.codex");
@@ -22,20 +24,24 @@ export async function readStatus(options = {}) {
   const configPath = path.join(codexHome, "config.toml");
   const authPath = path.join(codexHome, "auth.json");
   const profileStorePath = path.join(codexHome, PROFILE_STORE_FILE);
+  const settingsStorePath = path.join(codexHome, SETTINGS_STORE_FILE);
   const configContents = await readText(configPath);
   const authStatus = await readChatGptAuthStatus(authPath);
   const providerStatus = readCustomProviderStatus(configContents);
   const profileState = await readProfileState({ codexHome, providerStatus });
+  const switchSettings = await readSwitchSettings({ codexHome });
   return {
     codexHome,
     configPath,
     authPath,
     profileStorePath,
+    settingsStorePath,
     ...authStatus,
     ...providerStatus,
     profiles: profileState.profiles,
     activeProfileId: profileState.activeProfileId,
     activeProfile: profileState.activeProfile,
+    switchSettings,
   };
 }
 
@@ -131,6 +137,40 @@ export async function applyActiveRelayProfile({ codexHome = defaultCodexHome() }
     apiKey: profile.apiKey,
     codexHome,
   });
+}
+
+export async function readSwitchSettings({ codexHome = defaultCodexHome() } = {}) {
+  const settingsStorePath = path.join(codexHome, SETTINGS_STORE_FILE);
+  const raw = await readText(settingsStorePath);
+  let parsed = null;
+  if (raw.trim()) {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+  }
+  return {
+    settingsStorePath,
+    serviceTierMode: normalizeServiceTierMode(parsed?.serviceTierMode),
+  };
+}
+
+export async function saveSwitchSettings(settings, { codexHome = defaultCodexHome() } = {}) {
+  const current = await readSwitchSettings({ codexHome });
+  const next = {
+    version: 1,
+    serviceTierMode: normalizeServiceTierMode(settings?.serviceTierMode ?? current.serviceTierMode),
+  };
+  const settingsStorePath = path.join(codexHome, SETTINGS_STORE_FILE);
+  await fs.mkdir(codexHome, { recursive: true });
+  await fs.writeFile(settingsStorePath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+  return readSwitchSettings({ codexHome });
+}
+
+export function normalizeServiceTierMode(mode) {
+  const normalized = String(mode || "inherit").trim().toLowerCase();
+  return SERVICE_TIER_MODES.has(normalized) ? normalized : "inherit";
 }
 
 export function applyCustomProviderToContents(contents, baseUrl, apiKey) {

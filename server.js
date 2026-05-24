@@ -7,11 +7,13 @@ import {
   applyCustomProvider,
   deleteRelayProfile,
   readProfileState,
+  readSwitchSettings,
   readStatus,
   saveRelayProfile,
+  saveSwitchSettings,
   selectRelayProfile,
 } from "./src/config.js";
-import { detectCodexApp, injectPluginUnlock, launchCodex } from "./src/cdp.js";
+import { detectCodexApp, injectPluginUnlock, launchCodex, readServiceTierMode, setServiceTierMode } from "./src/cdp.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(dirname, "public");
@@ -90,14 +92,39 @@ const server = http.createServer(async (request, response) => {
         status: await statusPayload(),
       });
     }
+    if (url.pathname === "/api/service-tier" && request.method === "GET") {
+      const debugPort = Number(url.searchParams.get("debugPort") || 9229);
+      return sendJson(response, 200, {
+        ok: true,
+        settings: await readSwitchSettings(),
+        page: await safeReadServiceTierMode(debugPort),
+        status: await statusPayload(),
+      });
+    }
+    if (url.pathname === "/api/service-tier" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const settings = await saveSwitchSettings({ serviceTierMode: body.mode });
+      const page = body.apply === false ? null : await safeApplyServiceTierMode({ debugPort: Number(body.debugPort || 9229), mode: settings.serviceTierMode });
+      return sendJson(response, 200, {
+        ok: true,
+        message: page?.ok
+          ? `服务模式已切换为 ${serviceTierLabel(settings.serviceTierMode)}。`
+          : `服务模式已保存为 ${serviceTierLabel(settings.serviceTierMode)}，下次注入后生效。`,
+        settings,
+        page,
+        status: await statusPayload(),
+      });
+    }
     if (url.pathname === "/api/inject" && request.method === "POST") {
       const body = await readJsonBody(request);
       const debugPort = Number(body.debugPort || 9229);
       const injection = await injectPluginUnlock({ debugPort });
+      const serviceTier = await applyStoredServiceTierMode(debugPort);
       return sendJson(response, 200, {
         ok: true,
-        message: "插件解锁脚本已注入当前 Codex 窗口。",
+        message: "插件解锁脚本已注入当前 Codex 窗口，服务模式已同步。",
         injection,
+        serviceTier,
         status: await statusPayload(),
       });
     }
@@ -118,11 +145,13 @@ const server = http.createServer(async (request, response) => {
         debugPort,
       });
       const injection = await injectPluginUnlock({ debugPort });
+      const serviceTier = await applyStoredServiceTierMode(debugPort);
       return sendJson(response, 200, {
         ok: true,
-        message: "Codex 已用 CDP 启动，并完成插件解锁注入。",
+        message: "Codex 已用 CDP 启动，并完成插件解锁和服务模式同步。",
         launch,
         injection,
+        serviceTier,
         applied,
         status: await statusPayload(applied || undefined),
       });
@@ -160,6 +189,41 @@ async function safeStatusPayload() {
   } catch {
     return null;
   }
+}
+
+async function applyStoredServiceTierMode(debugPort) {
+  const settings = await readSwitchSettings();
+  return safeApplyServiceTierMode({ debugPort, mode: settings.serviceTierMode });
+}
+
+async function safeApplyServiceTierMode({ debugPort, mode }) {
+  try {
+    return await setServiceTierMode({ debugPort, mode });
+  } catch (error) {
+    return {
+      ok: false,
+      mode,
+      error: error?.message || String(error),
+    };
+  }
+}
+
+async function safeReadServiceTierMode(debugPort) {
+  try {
+    return await readServiceTierMode({ debugPort });
+  } catch (error) {
+    return {
+      ok: false,
+      mode: "unknown",
+      error: error?.message || String(error),
+    };
+  }
+}
+
+function serviceTierLabel(mode) {
+  if (mode === "fast") return "Fast";
+  if (mode === "standard") return "Standard";
+  return "继承";
 }
 
 async function serveStatic(urlPath, response) {

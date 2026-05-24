@@ -145,7 +145,7 @@ button:disabled {
 
 .status-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -393,6 +393,63 @@ input:focus {
   padding-top: 15px;
 }
 
+.service-tier-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+}
+
+.service-tier-panel strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #20232a;
+  font-size: 15px;
+}
+
+.service-tier-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.service-tier-actions {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  padding: 3px;
+}
+
+.service-tier-button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #343842;
+  padding: 0 11px;
+  white-space: nowrap;
+}
+
+.service-tier-button:hover {
+  background: #ffffff;
+  color: var(--blue);
+}
+
+.service-tier-button[data-active="true"] {
+  background: var(--blue);
+  color: #ffffff;
+}
+
+.service-tier-button[data-service-tier-mode="fast"][data-active="true"] {
+  background: var(--green);
+}
+
 .log-panel {
   margin-top: 16px;
   border-top: 1px solid var(--line);
@@ -454,7 +511,8 @@ pre {
   .app-header,
   .workspace,
   .status-strip,
-  .form-grid {
+  .form-grid,
+  .service-tier-panel {
     grid-template-columns: 1fr;
   }
 

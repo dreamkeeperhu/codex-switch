@@ -8,5 +8,6 @@ dist/
 .env.*
 !.env.example
 codex-switch.json
+codex-switch-settings.json
 config.toml
 auth.json

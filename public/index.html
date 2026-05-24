@@ -40,6 +40,10 @@
           <span>Codex.app</span>
           <strong id="appStatus">-</strong>
         </div>
+        <div>
+          <span>服务模式</span>
+          <strong id="serviceTierStatus">-</strong>
+        </div>
       </section>
 
       <section class="workspace">
@@ -103,6 +107,18 @@
             <button id="launchButton" type="button">启动并解锁</button>
             <button id="injectButton" class="secondary" type="button">只注入解锁</button>
           </div>
+
+          <section class="service-tier-panel" aria-label="服务模式">
+            <div>
+              <strong>Fast 模式</strong>
+              <p>Fast 会把请求切到 priority；不用时保持继承或 Standard。</p>
+            </div>
+            <div class="service-tier-actions">
+              <button class="service-tier-button" type="button" data-service-tier-mode="inherit">继承</button>
+              <button class="service-tier-button" type="button" data-service-tier-mode="standard">Standard</button>
+              <button class="service-tier-button" type="button" data-service-tier-mode="fast">Fast</button>
+            </div>
+          </section>
 
           <section class="log-panel" aria-label="运行输出">
             <div class="log-head">

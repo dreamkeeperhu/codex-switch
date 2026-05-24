@@ -13,6 +13,7 @@ It keeps the app focused on one workflow: switch Codex relay profiles, keep offi
 - **Custom provider writer**: writes the active profile to `~/.codex/config.toml` as `model_provider = "custom"`.
 - **Remote control preserved**: keeps Codex using the official ChatGPT login state while routing model requests through your relay API.
 - **Plugin unlock**: launches Codex with CDP and injects the plugin unlock script.
+- **Fast mode switch**: optionally patches Codex requests to use `serviceTier = "priority"` for Fast, or `null` for Standard.
 - **Menu bar / tray only**: no Dock icon on macOS, no window on launch.
 - **Low battery impact**: no LaunchAgent, no KeepAlive, no background polling; the local Node service starts only when needed.
 
@@ -80,6 +81,7 @@ open http://127.0.0.1:38383
 - Codex config: `~/.codex/config.toml`
 - Codex official login state: `~/.codex/auth.json`
 - Codex Switch relay profiles: `~/.codex/codex-switch.json`
+- Codex Switch app settings: `~/.codex/codex-switch-settings.json`
 
 On Windows, `~` resolves to your user profile, for example `C:\Users\you\.codex`.
 
@@ -103,6 +105,8 @@ experimental_bearer_token = "sk-..."
 Codex Switch does not modify the Codex app bundle.
 
 It starts Codex with a local Chromium DevTools Protocol port, then injects a small renderer script into the current Codex window. The relay config is written to your normal Codex config file, so Codex still sees a standard `custom` model provider.
+
+When Fast mode is enabled, the injected script patches Codex's renderer dispatcher and adds `serviceTier = "priority"` to `thread/start`, `thread/resume`, and `turn/start` requests. Standard mode sends `serviceTier = null`; inherit mode leaves requests unchanged.
 
 ## Security Notes
 

@@ -5,9 +5,12 @@ import path from "node:path";
 import test from "node:test";
 import {
   applyCustomProviderToContents,
+  normalizeServiceTierMode,
   readCustomProviderStatus,
   readProfileState,
+  readSwitchSettings,
   saveRelayProfile,
+  saveSwitchSettings,
   selectRelayProfile,
 } from "../src/config.js";
 
@@ -75,6 +78,25 @@ test("saves and selects multiple relay profiles", async () => {
 
     const state = await readProfileState({ codexHome });
     assert.equal(state.activeProfile.name, "Beta");
+  } finally {
+    await rm(codexHome, { recursive: true, force: true });
+  }
+});
+
+test("saves fast service tier setting", async () => {
+  const codexHome = await mkdtemp(path.join(os.tmpdir(), "codex-switch-"));
+  try {
+    assert.equal(normalizeServiceTierMode("priority"), "inherit");
+    assert.equal(normalizeServiceTierMode("fast"), "fast");
+
+    const saved = await saveSwitchSettings({ serviceTierMode: "fast" }, { codexHome });
+    assert.equal(saved.serviceTierMode, "fast");
+
+    const state = await readSwitchSettings({ codexHome });
+    assert.equal(state.serviceTierMode, "fast");
+
+    const reset = await saveSwitchSettings({ serviceTierMode: "standard" }, { codexHome });
+    assert.equal(reset.serviceTierMode, "standard");
   } finally {
     await rm(codexHome, { recursive: true, force: true });
   }

@@ -9,6 +9,7 @@ const launchButton = document.querySelector("#launchButton");
 const injectButton = document.querySelector("#injectButton");
 const refreshButton = document.querySelector("#refreshButton");
 const logOutput = document.querySelector("#logOutput");
+const serviceTierButtons = Array.from(document.querySelectorAll("[data-service-tier-mode]"));
 
 const fields = {
   profileId: document.querySelector("#profileId"),
@@ -25,6 +26,7 @@ const statusNodes = {
   provider: document.querySelector("#providerStatus"),
   activeProfile: document.querySelector("#activeProfileStatus"),
   app: document.querySelector("#appStatus"),
+  serviceTier: document.querySelector("#serviceTierStatus"),
   configPath: document.querySelector("#configPath"),
   lastUpdated: document.querySelector("#lastUpdated"),
   profileCount: document.querySelector("#profileCount"),
@@ -36,6 +38,7 @@ const appState = {
   activeProfileId: "",
   selectedProfileId: "",
   status: null,
+  serviceTierMode: "inherit",
 };
 
 profileForm.addEventListener("submit", async (event) => {
@@ -122,6 +125,22 @@ injectButton.addEventListener("click", async () => {
 });
 
 refreshButton.addEventListener("click", () => refreshStatus());
+
+serviceTierButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    const mode = button.getAttribute("data-service-tier-mode") || "inherit";
+    await withBusy(button, async () => {
+      const result = await postJson("/api/service-tier", {
+        mode,
+        debugPort: Number(fields.debugPort.value || 9229),
+        apply: true,
+      });
+      renderStatus(result.status);
+      renderServiceTier(result.settings, result.page);
+      writeLog(result);
+    });
+  });
+});
 
 await refreshStatus();
 
@@ -223,6 +242,7 @@ function existingProfile(id) {
 function renderStatus(status) {
   if (!status) return;
   appState.status = status;
+  renderServiceTier(status.switchSettings);
   statusNodes.auth.textContent = status.authenticated ? status.accountLabel || "已登录" : "未登录";
   statusNodes.auth.className = status.authenticated ? "ok" : "bad";
   statusNodes.provider.textContent = status.provider || "-";
@@ -233,6 +253,20 @@ function renderStatus(status) {
   statusNodes.configPath.textContent = status.configPath || "~/.codex/config.toml";
   if (status.codexApp && !fields.codexAppPath.value) fields.codexAppPath.value = status.codexApp;
   statusNodes.lastUpdated.textContent = new Date().toLocaleTimeString();
+}
+
+function renderServiceTier(settings, page = null) {
+  const mode = settings?.serviceTierMode || appState.serviceTierMode || "inherit";
+  appState.serviceTierMode = mode;
+  statusNodes.serviceTier.textContent = serviceTierLabel(mode);
+  statusNodes.serviceTier.className = mode === "fast" ? "ok" : "";
+  serviceTierButtons.forEach((button) => {
+    const active = button.getAttribute("data-service-tier-mode") === mode;
+    button.dataset.active = String(active);
+  });
+  if (page?.ok && page.mode && page.mode !== mode) {
+    statusNodes.serviceTier.textContent = `${serviceTierLabel(mode)} / 页面 ${serviceTierLabel(page.mode)}`;
+  }
 }
 
 async function withBusy(button, task) {
@@ -289,6 +323,12 @@ function redact(value) {
 function providerInitial(name) {
   const clean = String(name || "C").trim();
   return clean[0]?.toUpperCase() || "C";
+}
+
+function serviceTierLabel(mode) {
+  if (mode === "fast") return "Fast";
+  if (mode === "standard") return "Standard";
+  return "继承";
 }
 
 function escapeHtml(value) {

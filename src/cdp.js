@@ -130,6 +130,51 @@ export async function injectPluginUnlock({ debugPort = 9229 } = {}) {
   };
 }
 
+export async function setServiceTierMode({ debugPort = 9229, mode = "inherit" } = {}) {
+  const safeMode = JSON.stringify(String(mode || "inherit"));
+  const expression = `
+    (() => {
+      if (typeof window.__codexSwitchSetServiceTierMode !== "function") {
+        return { ok: false, error: "Codex Switch 注入脚本还没有安装" };
+      }
+      return window.__codexSwitchSetServiceTierMode(${safeMode});
+    })()
+  `;
+  const result = await evaluateCodexExpression({ debugPort, expression });
+  return result?.result?.result?.value || { ok: false, error: "没有收到 Fast 模式状态" };
+}
+
+export async function readServiceTierMode({ debugPort = 9229 } = {}) {
+  const expression = `
+    (() => {
+      if (typeof window.__codexSwitchGetServiceTierState !== "function") {
+        return { ok: false, mode: "unknown", error: "Codex Switch 注入脚本还没有安装" };
+      }
+      return window.__codexSwitchGetServiceTierState();
+    })()
+  `;
+  const result = await evaluateCodexExpression({ debugPort, expression });
+  return result?.result?.result?.value || { ok: false, mode: "unknown", error: "没有收到 Fast 模式状态" };
+}
+
+export async function evaluateCodexExpression({ debugPort = 9229, expression } = {}) {
+  if (typeof WebSocket === "undefined") {
+    throw new Error("当前 Node 运行时没有 WebSocket；请使用 Node 22 或更新版本");
+  }
+  const target = await waitForCdpTarget(debugPort, 4000);
+  const [result] = await runCdpCommands(target.webSocketDebuggerUrl, [
+    [
+      "Runtime.evaluate",
+      {
+        expression,
+        awaitPromise: true,
+        returnByValue: true,
+      },
+    ],
+  ]);
+  return result;
+}
+
 export async function waitForCdpTarget(debugPort, timeoutMs = 18000) {
   const started = Date.now();
   let lastError = null;
