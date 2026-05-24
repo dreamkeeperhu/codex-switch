@@ -1,16 +1,28 @@
 {
   "name": "codex-switch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
+  "main": "windows/electron-main.js",
   "description": "Menu bar Codex switcher for relay profiles, plugin unlock, and remote control.",
+  "author": "hu",
+  "contributors": [
+    "hu",
+    "Codex"
+  ],
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check src/config.js && node --check src/cdp.js && node --check src/plugin-unlock-inject.js && node --check public/app.js",
+    "dev:windows": "electron .",
+    "check": "node --check server.js && node --check src/config.js && node --check src/cdp.js && node --check src/plugin-unlock-inject.js && node --check public/app.js && node --check windows/electron-main.js",
     "test": "node --test",
-    "build:macos": "./build-macos-app.sh"
+    "build:macos": "./build-macos-app.sh",
+    "build:windows": "electron-builder --win zip --x64 --config electron-builder.json"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "electron": "42.2.0",
+    "electron-builder": "26.8.1"
   }
 }

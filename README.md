@@ -1,6 +1,6 @@
 # Codex Switch
 
-Codex Switch is a tiny macOS menu bar helper for Codex.
+Codex Switch is a tiny macOS menu bar and Windows tray helper for Codex.
 
 It keeps the app focused on one workflow: switch Codex relay profiles, keep official ChatGPT login for remote control, and launch Codex with plugin unlock enabled.
 
@@ -13,7 +13,7 @@ It keeps the app focused on one workflow: switch Codex relay profiles, keep offi
 - **Custom provider writer**: writes the active profile to `~/.codex/config.toml` as `model_provider = "custom"`.
 - **Remote control preserved**: keeps Codex using the official ChatGPT login state while routing model requests through your relay API.
 - **Plugin unlock**: launches Codex with CDP and injects the plugin unlock script.
-- **Menu bar only**: no Dock icon, no window on launch.
+- **Menu bar / tray only**: no Dock icon on macOS, no window on launch.
 - **Low battery impact**: no LaunchAgent, no KeepAlive, no background polling; the local Node service starts only when needed.
 
 ## Menu Bar
@@ -28,7 +28,12 @@ If the panel is closed, the local Node service is stopped. The menu bar process 
 
 ## Install
 
-Download `Codex-Switch-macos-arm64.zip` from the latest GitHub Release, unzip it, and open `Codex Switch.app`.
+Download the build for your system from the latest GitHub Release:
+
+- macOS Apple Silicon: `Codex-Switch-macos-arm64.zip`
+- Windows x64: `Codex-Switch-windows-x64.zip`
+
+Unzip it, then open `Codex Switch.app` on macOS or `Codex Switch.exe` on Windows.
 
 If macOS blocks the unsigned app, allow it in:
 
@@ -40,12 +45,11 @@ System Settings -> Privacy & Security
 
 Requirements:
 
-- macOS
 - Node.js 22 or newer
-- Xcode Command Line Tools
-- Python 3 with Pillow
+- Xcode Command Line Tools and Python 3 with Pillow for the macOS app bundle
+- Electron Builder for the Windows tray build, installed by `npm install`
 
-Build:
+Build macOS:
 
 ```bash
 npm install
@@ -53,6 +57,15 @@ npm run check
 npm test
 ./build-macos-app.sh
 open "dist/Codex Switch.app"
+```
+
+Build Windows:
+
+```bash
+npm install
+npm run check
+npm test
+npm run build:windows
 ```
 
 Run the web panel directly:
@@ -67,6 +80,8 @@ open http://127.0.0.1:38383
 - Codex config: `~/.codex/config.toml`
 - Codex official login state: `~/.codex/auth.json`
 - Codex Switch relay profiles: `~/.codex/codex-switch.json`
+
+On Windows, `~` resolves to your user profile, for example `C:\Users\you\.codex`.
 
 API keys are stored in plain text by design, so you can paste, inspect, and edit them easily.
 
@@ -99,6 +114,11 @@ It starts Codex with a local Chromium DevTools Protocol port, then injects a sma
 ## Credits
 
 The provider-list UI direction is inspired by [CC Switch](https://github.com/farion1231/cc-switch). Codex Switch is a smaller Codex-only helper and does not reuse CC Switch code.
+
+## Contributors
+
+- hu
+- Codex
 
 ## Development
 

@@ -1,0 +1,29 @@
+{
+  "appId": "local.codex-switch",
+  "productName": "Codex Switch",
+  "asar": false,
+  "directories": {
+    "output": "dist/windows"
+  },
+  "files": [
+    "server.js",
+    "package.json",
+    "src/**",
+    "public/**",
+    "windows/electron-main.js",
+    "windows/CodexSwitch.ico",
+    "windows/tray.png"
+  ],
+  "win": {
+    "icon": "windows/CodexSwitch.ico",
+    "target": [
+      {
+        "target": "zip",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "artifactName": "Codex-Switch-windows-${arch}.${ext}"
+  }
+}

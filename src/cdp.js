@@ -8,19 +8,20 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 const INJECT_PATH = path.join(dirname, "plugin-unlock-inject.js");
 
 export async function detectCodexApp(userPath = "") {
-  const candidates = [
-    userPath,
-    "/Applications/OpenAI Codex.app",
-    "/Applications/Codex.app",
-    path.join(os.homedir(), "Applications", "OpenAI Codex.app"),
-    path.join(os.homedir(), "Applications", "Codex.app"),
-  ].filter(Boolean);
+  const candidates = codexAppCandidates(userPath);
 
   for (const candidate of candidates) {
     const expanded = expandHome(candidate);
     try {
       const stat = await fs.stat(expanded);
-      if (stat.isDirectory()) return expanded;
+      if (process.platform === "darwin" && stat.isDirectory()) return expanded;
+      if (process.platform === "win32") {
+        if (stat.isFile()) return expanded;
+        if (stat.isDirectory()) {
+          const executable = await firstExistingPath(windowsExecutableNames().map((name) => path.join(expanded, name)));
+          if (executable) return executable;
+        }
+      }
     } catch {
       // Try the next candidate.
     }
@@ -29,23 +30,81 @@ export async function detectCodexApp(userPath = "") {
 }
 
 export async function launchCodex({ appPath = "", debugPort = 9229 } = {}) {
-  if (process.platform !== "darwin") {
-    throw new Error("当前小应用只实现了 macOS Codex.app 启动");
-  }
   const resolved = await detectCodexApp(appPath);
   if (!resolved) {
-    throw new Error("没有找到 Codex.app，请在界面里填写 Codex.app 路径");
+    throw new Error(process.platform === "win32" ? "没有找到 Codex.exe，请在界面里填写 Codex.exe 路径" : "没有找到 Codex.app，请在界面里填写 Codex.app 路径");
   }
-  const args = [
-    "-na",
-    resolved,
-    "--args",
-    `--remote-debugging-port=${debugPort}`,
-    `--remote-allow-origins=http://127.0.0.1:${debugPort}`,
-  ];
-  const child = spawn("open", args, { detached: true, stdio: "ignore" });
-  child.unref();
-  return { appPath: resolved, debugPort, args: ["open", ...args] };
+  if (process.platform === "darwin") {
+    const args = [
+      "-na",
+      resolved,
+      "--args",
+      `--remote-debugging-port=${debugPort}`,
+      `--remote-allow-origins=http://127.0.0.1:${debugPort}`,
+    ];
+    const child = spawn("open", args, { detached: true, stdio: "ignore" });
+    child.unref();
+    return { appPath: resolved, debugPort, args: ["open", ...args] };
+  }
+
+  if (process.platform === "win32") {
+    const args = [
+      `--remote-debugging-port=${debugPort}`,
+      `--remote-allow-origins=http://127.0.0.1:${debugPort}`,
+    ];
+    const child = spawn(resolved, args, { detached: true, stdio: "ignore", windowsHide: false });
+    child.unref();
+    return { appPath: resolved, debugPort, args: [resolved, ...args] };
+  }
+
+  throw new Error("当前小应用只实现了 macOS 和 Windows 的 Codex 启动");
+}
+
+function codexAppCandidates(userPath = "") {
+  if (process.platform === "win32") {
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    const programFiles = process.env.ProgramFiles || "C:\\Program Files";
+    const programFilesX86 = process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
+    return [
+      userPath,
+      process.env.CODEX_APP_PATH,
+      path.join(localAppData, "Programs", "Codex", "Codex.exe"),
+      path.join(localAppData, "Programs", "OpenAI Codex", "OpenAI Codex.exe"),
+      path.join(localAppData, "Programs", "OpenAI Codex", "Codex.exe"),
+      path.join(localAppData, "Codex", "Codex.exe"),
+      path.join(programFiles, "Codex", "Codex.exe"),
+      path.join(programFiles, "OpenAI Codex", "OpenAI Codex.exe"),
+      path.join(programFiles, "OpenAI Codex", "Codex.exe"),
+      path.join(programFilesX86, "Codex", "Codex.exe"),
+      path.join(programFilesX86, "OpenAI Codex", "OpenAI Codex.exe"),
+      path.join(programFilesX86, "OpenAI Codex", "Codex.exe"),
+    ].filter(Boolean);
+  }
+
+  return [
+    userPath,
+    process.env.CODEX_APP_PATH,
+    "/Applications/OpenAI Codex.app",
+    "/Applications/Codex.app",
+    path.join(os.homedir(), "Applications", "OpenAI Codex.app"),
+    path.join(os.homedir(), "Applications", "Codex.app"),
+  ].filter(Boolean);
+}
+
+function windowsExecutableNames() {
+  return ["Codex.exe", "OpenAI Codex.exe"];
+}
+
+async function firstExistingPath(candidates) {
+  for (const candidate of candidates) {
+    try {
+      const stat = await fs.stat(candidate);
+      if (stat.isFile()) return candidate;
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
 }
 
 export async function injectPluginUnlock({ debugPort = 9229 } = {}) {
